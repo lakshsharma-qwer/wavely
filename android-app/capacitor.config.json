@@ -1,0 +1,19 @@
+{
+  "appId": "com.wavely.app",
+  "appName": "Wavely",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true,
+    "allowNavigation": ["127.0.0.1"]
+  },
+  "android": {
+    "backgroundColor": "#17110E"
+  },
+  "plugins": {
+    "CapacitorNodeJS": {
+      "nodeDir": "nodejs",
+      "startMode": "auto"
+    }
+  }
+}

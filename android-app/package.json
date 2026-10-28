@@ -1,0 +1,19 @@
+{
+  "name": "wavely-android",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "apk": "node scripts/build.mjs && npx cap sync android && cd android && ./gradlew assembleDebug && cp app/build/outputs/apk/debug/app-debug.apk ../Wavely.apk"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "capacitor-nodejs": "https://github.com/hampoelz/capacitor-nodejs/releases/download/v1.0.0-beta.10/capacitor-nodejs.tgz"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.0.0",
+    "esbuild": "^0.28.2",
+    "unorm": "^1.6.0",
+    "ws": "^8.22.0"
+  }
+}

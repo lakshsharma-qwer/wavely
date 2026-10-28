@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Wavely mark (from web/public/favicon.svg), padded into the adaptive-icon safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="52.4"
+    android:viewportHeight="52.4">
+    <group android:translateX="10.2" android:translateY="10.2">
+        <path android:pathData="M6,21h20" android:strokeColor="#5A4636" android:strokeWidth="1.5" />
+        <path android:pathData="M9,21v-3M12,21v-5M15,21v-3M18,21v-5M21,21v-3M24,21v-5" android:strokeColor="#7C6A5E" android:strokeWidth="1.2" />
+        <path android:pathData="M17,7v18" android:strokeColor="#FFB547" android:strokeWidth="2.4" android:strokeLineCap="round" />
+    </group>
+</vector>

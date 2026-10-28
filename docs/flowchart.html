@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wavely Flowcharts</title>
+<style>
+  :root { --bg:#faf7f4; --fg:#1d1612; --muted:#6b5d54; --card:#ffffff; --line:#e7ddd5; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#17110E; --fg:#f3e9df; --muted:#b3a294; --card:#211915; --line:#3a2e27; } }
+  body { margin:0; background:var(--bg); color:var(--fg); font-family:system-ui,-apple-system,sans-serif; line-height:1.5; }
+  main { max-width:1100px; margin:0 auto; padding:32px 16px 64px; }
+  h1 { margin:0 0 4px; font-size:28px; }
+  header p, section p { color:var(--muted); margin:4px 0 16px; }
+  section { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:20px; margin-top:24px; overflow-x:auto; }
+  h2 { margin:0 0 4px; font-size:20px; }
+  .mermaid { margin:0; text-align:center; background:transparent; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>Wavely platform flowcharts</h1>
+  <p>The same diagrams as flowchart.md in this folder. How Wavely fits together, from the screen down to the music source.</p>
+</header>
+<section><h2>1. System overview</h2><p>One Node.js server (Express) provides the API and serves the built web app. The same
+server runs in three places: on a computer or host, on a Mac shared to other devices, or
+inside the Android app.</p><pre class="mermaid">
+flowchart TB
+    subgraph Clients[&quot;Where people listen&quot;]
+        Browser[&quot;Desktop browser&quot;]
+        iPhone[&quot;iPhone Safari&lt;br/&gt;(via Mac on hotspot / Wi-Fi)&quot;]
+        subgraph Android[&quot;Android app (Wavely.apk)&quot;]
+            Loader[&quot;Startup screen&lt;br/&gt;waits for the server&quot;]
+            WebView[&quot;WebView showing the web app&quot;]
+            NodeMobile[&quot;Embedded Node.js 18&lt;br/&gt;(capacitor-nodejs)&quot;]
+            Loader --&gt;|&quot;server answers /api/health&quot;| WebView
+        end
+    end
+
+    subgraph Web[&quot;Web app (React + Vite, web/src)&quot;]
+        Pages[&quot;Pages: Home, Search, Album,&lt;br/&gt;Artist, Library, Liked, Playlist, Queue&quot;]
+        Stores[&quot;Stores: player, library, taste&lt;br/&gt;(saved in localStorage)&quot;]
+        Audio[&quot;AudioEngine&lt;br/&gt;(HTML audio element)&quot;]
+        Pages &lt;--&gt; Stores
+        Stores --&gt; Audio
+    end
+
+    subgraph Server[&quot;Wavely server (Express, server/src)&quot;]
+        Security[&quot;Security headers + rate limits&quot;]
+        API[&quot;/api routes&quot;]
+        Static[&quot;Static hosting of the built web app&quot;]
+        Music[&quot;Music layer&lt;br/&gt;(search cache, 10 min)&quot;]
+        Recs[&quot;Recommendation engine&quot;]
+        Catalog[(&quot;Catalog graph&lt;br/&gt;catalog.json&quot;)]
+        CoPlay[(&quot;Co-listening graph&lt;br/&gt;coplay.json&quot;)]
+        Security --&gt; API
+        API --&gt; Music
+        API --&gt; Recs
+        Recs --&gt; Music
+        Music --&gt;|&quot;every result is ingested&quot;| Catalog
+        Recs --&gt; Catalog
+        Recs --&gt; CoPlay
+    end
+
+    subgraph Providers[&quot;Music providers (pick one)&quot;]
+        Room[&quot;Beatsync room WebSocket&lt;br/&gt;(default)&quot;]
+        Direct[&quot;Beatsync provider API&lt;br/&gt;(PROVIDER_URL)&quot;]
+        Demo[&quot;Demo catalog&lt;br/&gt;(DEMO_MODE)&quot;]
+    end
+
+    Uploads[(&quot;Audio files&lt;br/&gt;uploads.beatsync.gg&quot;)]
+
+    Browser --&gt; Web
+    iPhone --&gt; Web
+    WebView --&gt; Web
+    NodeMobile --&gt;|&quot;runs on 127.0.0.1:4000&quot;| Server
+    Web --&gt;|&quot;HTTP /api/*&quot;| Security
+    Static -.-&gt;|&quot;serves&quot;| Web
+    Music --&gt; Room
+    Music --&gt; Direct
+    Music --&gt; Demo
+    API --&gt;|&quot;proxies audio, allowlisted hosts only&quot;| Uploads
+</pre></section>
+<section><h2>2. Search and play a song</h2><pre class="mermaid">
+sequenceDiagram
+    actor User
+    participant UI as Web app
+    participant API as Wavely server
+    participant Cache as Search cache + catalog
+    participant BS as Beatsync (WebSocket room)
+    participant Host as uploads.beatsync.gg
+
+    User-&gt;&gt;UI: Types &quot;arijit singh&quot;
+    UI-&gt;&gt;API: GET /api/search?q=arijit singh
+    API-&gt;&gt;Cache: Cached result?
+    alt Not cached
+        Cache-&gt;&gt;BS: SEARCH_MUSIC
+        BS--&gt;&gt;Cache: SEARCH_RESPONSE (tracks)
+        Cache-&gt;&gt;Cache: Add tracks to the catalog graph
+    end
+    Cache--&gt;&gt;API: Tracks
+    API--&gt;&gt;UI: Results (top result + songs)
+
+    User-&gt;&gt;UI: Taps play
+    UI-&gt;&gt;API: GET /api/tracks/:id/stream
+    API-&gt;&gt;BS: STREAM_MUSIC (resolve the audio URL)
+    BS--&gt;&gt;API: SET_AUDIO_SOURCES (signed URL)
+    API-&gt;&gt;API: Check the URL host is on STREAM_HOSTS
+    API-&gt;&gt;Host: Fetch audio (forwards Range header)
+    Host--&gt;&gt;API: Audio bytes
+    API--&gt;&gt;UI: Streams audio/mpeg
+    UI-&gt;&gt;UI: Audio element plays
+
+    Note over UI,API: While a song plays, the UI calls&lt;br/&gt;POST /api/tracks/:next/prepare so the next song starts instantly.
+    Note over API,Host: If a cached URL has expired (401/403/404/410),&lt;br/&gt;the server resolves a fresh one once and retries.
+</pre></section>
+<section><h2>3. Recommendations and taste</h2><pre class="mermaid">
+flowchart LR
+    Listen[&quot;User listens, skips, likes&quot;] --&gt; Taste[&quot;Taste store&lt;br/&gt;(on the device)&quot;]
+    Taste --&gt;|&quot;builds&quot;| Profile[&quot;Taste profile&quot;]
+    Taste --&gt;|&quot;POST /api/events&quot;| Events[&quot;Listening events&quot;]
+    Events --&gt; CoPlay[(&quot;Co-listening graph&quot;)]
+
+    Profile --&gt;|&quot;POST /api/recs/home&quot;| Home[&quot;Home stations&lt;br/&gt;(tuning dial)&quot;]
+    Profile --&gt;|&quot;POST /api/recs/radio&quot;| Radio[&quot;Radio queue&lt;br/&gt;(endless play)&quot;]
+    ArtistPage[&quot;Artist page&quot;] --&gt;|&quot;GET /api/recs/artist/:id/related&quot;| Related[&quot;Related artists&quot;]
+
+    subgraph Engine[&quot;Recommendation engine&quot;]
+        Seeds[&quot;Starter stations&lt;br/&gt;(REC_SEED_GROUPS)&lt;br/&gt;for new listeners&quot;]
+        Expand[&quot;Expand artists by searching&lt;br/&gt;(grows the catalog)&quot;]
+        Score[&quot;Score tracks: blend familiar&lt;br/&gt;and discovery by the dial setting&lt;br/&gt;(Familiar / Balanced / Uncharted)&quot;]
+    end
+
+    Home --&gt; Engine
+    Radio --&gt; Engine
+    Related --&gt; Engine
+    Engine --&gt; Catalog[(&quot;Catalog graph&quot;)]
+    Engine --&gt; CoPlay
+    Catalog -.-&gt;|&quot;saved every 30 s&quot;| Disk[(&quot;data/*.json&quot;)]
+    CoPlay -.-&gt;|&quot;saved every 30 s&quot;| Disk
+</pre></section>
+<section><h2>4. Android app startup</h2><pre class="mermaid">
+flowchart TD
+    Open[&quot;User opens Wavely&quot;] --&gt; Activity[&quot;MainActivity (Capacitor)&quot;]
+    Activity --&gt; ShowLoader[&quot;Show startup screen&lt;br/&gt;(http://localhost/index.html)&quot;]
+    Activity --&gt; StartNode[&quot;Start embedded Node.js&quot;]
+    StartNode --&gt; Main[&quot;nodejs/index.js&quot;]
+    Main --&gt; Seed[&quot;Copy seed graphs to app storage&lt;br/&gt;(first run only)&quot;]
+    Seed --&gt; Polyfill[&quot;Add WebSocket + normalize()&lt;br/&gt;(Node 18 without ICU)&quot;]
+    Polyfill --&gt; Load{&quot;server.js loads?&quot;}
+    Load --&gt;|&quot;yes&quot;| Listen[&quot;Server listens on 127.0.0.1:4000&quot;]
+    Load --&gt;|&quot;no&quot;| ErrorPage[&quot;Serve an error page&lt;br/&gt;on 127.0.0.1:4000&quot;]
+    ShowLoader --&gt; Poll{&quot;/api/health answers?&quot;}
+    Poll --&gt;|&quot;not yet, retry every 300 ms&quot;| Poll
+    Listen --&gt; Poll
+    ErrorPage --&gt; Poll
+    Poll --&gt;|&quot;yes&quot;| Navigate[&quot;Open http://127.0.0.1:4000/&quot;]
+    Navigate --&gt; App[&quot;Wavely web app&lt;br/&gt;(or the error page)&quot;]
+</pre></section>
+</main>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  const dark = matchMedia("(prefers-color-scheme: dark)").matches;
+  mermaid.initialize({ startOnLoad: true, theme: dark ? "dark" : "default", securityLevel: "strict", flowchart: { htmlLabels: true } });
+</script>
+</body>
+</html>

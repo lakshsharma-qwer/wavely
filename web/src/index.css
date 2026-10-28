@@ -1,0 +1,257 @@
+@import "tailwindcss";
+
+/* Wavely: a hi-fi receiver at night. Walnut room, black-glass tuning dial
+   lit in amber, and a brushed-silver deck for the transport controls. */
+@theme {
+  --font-display: "Anybody", "Hanken Grotesk", ui-sans-serif, sans-serif;
+  --font-sans: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Martian Mono", ui-monospace, monospace;
+
+  --color-base: #17110e; /* walnut at night */
+  --color-panel: #1f1713;
+  --color-raised: #2b201b;
+  --color-line: #3b2c25;
+  --color-glass: #0a0807; /* dial window */
+  --color-paper: #f3e8da; /* primary text */
+  --color-dust: #b19e8f; /* secondary text */
+  --color-dim: #7c6a5e; /* tertiary text */
+  --color-amber: #ffb547; /* dial glow, primary accent */
+  --color-amber-deep: #e08a1e;
+  --color-ember: #ff5b3a; /* on air */
+  --color-silver: #cfc8be; /* deck faceplate */
+  --color-silver-ink: #1c1714; /* text on silver */
+  --color-silver-dim: #5b5048;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--color-base);
+  color: var(--color-paper);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+::selection {
+  background: var(--color-amber);
+  color: var(--color-glass);
+}
+
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-amber);
+    outline-offset: 2px;
+  }
+}
+
+/* Custom classes live in the components layer so Tailwind utilities can override them. */
+@layer components {
+/* ---------- Type ---------- */
+.t-display {
+  font-family: var(--font-display);
+  font-stretch: 125%;
+  font-weight: 800;
+  line-height: 0.92;
+  letter-spacing: -0.015em;
+}
+.t-wide {
+  font-family: var(--font-display);
+  font-stretch: 150%;
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+}
+.t-head {
+  font-family: var(--font-display);
+  font-stretch: 112%;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+}
+.t-label {
+  font-family: var(--font-mono);
+  font-stretch: 87.5%;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.t-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Surfaces ---------- */
+.scroll-area {
+  scrollbar-width: thin;
+  scrollbar-color: #4a382f transparent;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Brushed aluminium faceplate for the player deck. */
+.faceplate {
+  color: var(--color-silver-ink);
+  background:
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.06) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, #e2ddd5 0%, #cbc4b9 55%, #b8b0a4 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.7),
+    inset 0 -1px 0 rgb(0 0 0 / 0.25),
+    0 12px 40px -12px rgb(0 0 0 / 0.8);
+}
+
+/* Black glass with a faint reflection, for the dial window. */
+.glass {
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.05) 0%, transparent 38%),
+    radial-gradient(120% 90% at 50% 120%, rgb(255 181 71 / 0.14), transparent 60%),
+    var(--color-glass);
+  box-shadow:
+    inset 0 2px 12px rgb(0 0 0 / 0.9),
+    inset 0 0 0 1px rgb(255 255 255 / 0.04),
+    0 1px 0 rgb(255 255 255 / 0.05);
+}
+
+.glow-text {
+  color: var(--color-amber);
+  text-shadow:
+    0 0 8px rgb(255 181 71 / 0.55),
+    0 0 22px rgb(255 140 40 / 0.25);
+}
+
+.needle {
+  background: var(--color-amber);
+  box-shadow:
+    0 0 6px rgb(255 181 71 / 0.9),
+    0 0 18px rgb(255 140 40 / 0.6);
+}
+
+/* Hardware-style button on the silver deck. */
+.knob {
+  background: radial-gradient(circle at 50% 30%, #3a302a, #15100d 70%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.18),
+    0 2px 4px rgb(0 0 0 / 0.45);
+  color: var(--color-amber);
+}
+
+/* ---------- Sliders ---------- */
+.slider {
+  --fill: 0%;
+  --track: rgb(243 232 218 / 0.18);
+  --done: var(--color-paper);
+  --done-hover: var(--color-amber);
+  appearance: none;
+  width: 100%;
+  height: 14px;
+  background: transparent;
+  cursor: pointer;
+}
+.slider.on-silver {
+  --track: rgb(28 23 20 / 0.22);
+  --done: var(--color-silver-ink);
+  --done-hover: var(--color-ember);
+}
+.slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--done) var(--fill), var(--track) var(--fill));
+}
+.slider:hover::-webkit-slider-runnable-track,
+.slider:focus-visible::-webkit-slider-runnable-track {
+  background: linear-gradient(to right, var(--done-hover) var(--fill), var(--track) var(--fill));
+}
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: var(--done);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.slider:hover::-webkit-slider-thumb,
+.slider:focus-visible::-webkit-slider-thumb {
+  opacity: 1;
+}
+.slider::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--track);
+}
+.slider::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--done);
+}
+.slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--done);
+}
+
+}
+
+/* ---------- Motion ---------- */
+@keyframes eq {
+  0%, 100% { transform: scaleY(0.3); }
+  50% { transform: scaleY(1); }
+}
+.eq span {
+  display: inline-block;
+  width: 3px;
+  height: 13px;
+  margin: 0 1px;
+  background: var(--color-amber);
+  transform-origin: bottom;
+  animation: eq 0.9s ease-in-out infinite;
+}
+.eq span:nth-child(2) { animation-delay: -0.3s; }
+.eq span:nth-child(3) { animation-delay: -0.6s; }
+.eq.paused span { animation-play-state: paused; }
+
+@keyframes skeleton {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.9; }
+}
+.skeleton {
+  background: var(--color-raised);
+  animation: skeleton 1.4s ease-in-out infinite;
+}
+
+/* Brief interference while the dial changes station. */
+@keyframes tune {
+  0% { opacity: 0.25; filter: blur(2px); transform: translateY(4px); }
+  100% { opacity: 1; filter: none; transform: none; }
+}
+.tune-in {
+  animation: tune 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+.rise {
+  animation: rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
